@@ -622,14 +622,14 @@ function initGraph() {
         'font-size':'10px', 'font-family':'Inter,sans-serif', 'font-weight':'700',
         'text-valign':'bottom', 'text-halign':'center', 'text-margin-y':8,
         'background-color':'data(color)', 'color':'data(color)',
-        'text-outline-width':2, 'text-outline-color':c.bg, 'text-outline-opacity':0.9,
-        'width':'mapData(size,1,10,56,90)', 'height':'mapData(size,1,10,56,90)',
+        'text-outline-width':0,
+        'width':'mapData(size,1,10,24,48)', 'height':'mapData(size,1,10,24,48)',
         'border-width':2, 'border-color':'data(color)', 'border-opacity':0.25,
         'opacity':0.8, 'overlay-padding':8
       }},
       { selector:'node.hovered', style:{
         'label':'data(label)', 'opacity':1,
-        'width':'mapData(size,1,10,64,100)', 'height':'mapData(size,1,10,64,100)',
+        'width':'mapData(size,1,10,30,56)', 'height':'mapData(size,1,10,30,56)',
         'border-opacity':0.6
       }},
       { selector:'node.dimmed', style:{ 'opacity':0.08 }},
@@ -815,7 +815,12 @@ Connect the ideas, highlight agreements and contradictions between concepts.
 NOTES:\n${notesText}`;
   try {
     const raw = await geminiCall(prompt, true);
-    const data = JSON.parse(raw);
+    let data;
+    try { data = JSON.parse(raw); } catch(pe) {
+      const cleaned = raw.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+      data = JSON.parse(cleaned);
+    }
+    if (!data.en && !data.de && !data.zh) throw new Error('Unexpected AI response format');
     displaySummary(data);
     await putCache('summary_'+tag, { data, cachedAt: new Date().toISOString() });
     document.getElementById('summaryCacheInfo').textContent = 'Just generated \u2014 cached for next time';
