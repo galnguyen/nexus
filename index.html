@@ -420,6 +420,14 @@ function updateSyncStatus(status) {
   label.textContent = status === 'synced' ? 'Synced' : status === 'error' ? 'Sync error' : 'Local only';
 }
 
+// ===== AUTO-SYNC (debounced) =====
+var _syncTimer = null;
+function autoSync() {
+  if (!getGhToken()) return;
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(function() { syncToGist(); }, 1500);
+}
+
 // ===== STATE =====
 let allTags = new Set();
 let formTags = [];
@@ -506,7 +514,7 @@ document.getElementById('saveNoteBtn').addEventListener('click', async () => {
   clearForm();
   await refreshAll();
   notify(editingId ? 'Note updated!' : 'Note saved!', 'success');
-  updateSyncStatus('unsynced');
+  updateSyncStatus('unsynced'); autoSync();
 });
 
 function clearForm() {
@@ -584,7 +592,7 @@ async function renderNotes() {
   document.querySelectorAll('.delete-note').forEach(b => b.addEventListener('click', async () => {
     if (!confirm('Delete this note?')) return;
     await deleteNote(b.dataset.id);
-    await refreshAll(); notify('Note deleted.','success'); updateSyncStatus('unsynced');
+    await refreshAll(); notify('Note deleted.','success'); updateSyncStatus('unsynced'); autoSync();
   }));
 }
 
@@ -805,7 +813,7 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
     await tx.done;
     await refreshAll();
     notify(`Imported ${data.notes.length} notes!`,'success');
-    updateSyncStatus('unsynced');
+    updateSyncStatus('unsynced'); autoSync();
   } catch(err) { notify('Import failed: '+err.message,'error'); }
   e.target.value = '';
 });
@@ -813,7 +821,7 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
 document.getElementById('clearAllBtn').addEventListener('click', async () => {
   if (!confirm('Delete ALL notes? This cannot be undone.')) return;
   const tx = db.transaction('notes','readwrite'); await tx.store.clear(); await tx.done;
-  await refreshAll(); notify('All notes cleared.','success'); updateSyncStatus('unsynced');
+  await refreshAll(); notify('All notes cleared.','success'); updateSyncStatus('unsynced'); autoSync();
 });
 
 // ===== SYNC =====
