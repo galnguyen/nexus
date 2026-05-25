@@ -49,8 +49,22 @@ input:focus,textarea:focus,select:focus { border-color:var(--c-cyan)!important; 
 .note-card { background:var(--c-card); border:1px solid var(--c-border); border-radius:16px; padding:20px; transition:all .2s; }
 .note-card:hover { border-color:var(--c-cyan); box-shadow:0 4px 12px rgba(0,0,0,.08); }
 .link-supports { color:var(--c-green); } .link-contradicts { color:var(--c-pink); }
-.timeline-card { position:relative; background:var(--c-card); border:1px solid var(--c-border); border-radius:12px; padding:16px; min-width:200px; max-width:280px; flex-shrink:0; }
-.timeline-card::before { content:''; position:absolute; top:-8px; left:24px; width:16px; height:16px; border-radius:50%; background:var(--c-cyan); border:3px solid var(--c-bg); }
+.fb-wrap { overflow-x:auto; }
+.fb-ctr { position:relative; display:inline-flex; align-items:center; min-height:520px; padding:0 50px 0 30px; }
+.fb-spine { position:absolute; top:50%; left:0; right:0; height:3px; background:var(--c-cyan); transform:translateY(-50%); }
+.fb-arrow { position:absolute; top:50%; right:-2px; transform:translateY(-50%); border:7px solid transparent; border-left:12px solid var(--c-cyan); }
+.fb-col { position:relative; width:210px; flex-shrink:0; height:520px; }
+.fb-dot { position:absolute; top:50%; left:50%; width:14px; height:14px; border-radius:50%; background:var(--c-cyan); border:3px solid var(--c-bg); transform:translate(-50%,-50%); z-index:2; }
+.fb-bone { position:absolute; left:50%; width:2px; }
+.fb-col.fb-top .fb-bone { top:calc(50% - 90px); height:90px; transform-origin:bottom center; transform:translateX(-50%) rotate(-15deg); background:linear-gradient(to top,var(--c-cyan),var(--c-border)); }
+.fb-col.fb-bot .fb-bone { top:50%; height:90px; transform-origin:top center; transform:translateX(-50%) rotate(15deg); background:linear-gradient(to bottom,var(--c-cyan),var(--c-border)); }
+.fb-card { position:absolute; width:190px; background:var(--c-card); border:1px solid var(--c-border); border-radius:12px; padding:14px; transition:all .2s; }
+.fb-card:hover { border-color:var(--c-cyan); box-shadow:0 4px 12px rgba(0,0,0,.1); transform:translateY(-2px); }
+.fb-col.fb-top .fb-card { bottom:calc(50% + 90px); left:0; }
+.fb-col.fb-bot .fb-card { top:calc(50% + 90px); right:0; }
+.fb-yr { position:absolute; font-size:9px; font-family:'Space Mono',monospace; font-weight:700; color:var(--c-amber); white-space:nowrap; z-index:3; }
+.fb-col.fb-top .fb-yr { top:calc(50% + 10px); left:calc(50% + 12px); }
+.fb-col.fb-bot .fb-yr { bottom:calc(50% + 10px); left:calc(50% + 12px); }
 .sync-dot { width:8px; height:8px; border-radius:50%; }
 .sync-dot.synced { background:var(--c-green); } .sync-dot.unsynced { background:var(--c-amber); } .sync-dot.error { background:var(--c-red); }
 </style>
@@ -217,7 +231,7 @@ input:focus,textarea:focus,select:focus { border-color:var(--c-cyan)!important; 
 <!-- ========== TAB: TIMELINE ========== -->
 <div id="tab-timeline" class="tab-content hidden space-y-4 max-w-5xl mx-auto">
   <div class="flex gap-3 items-center flex-wrap bg-n-card/50 p-4 rounded-xl border border-n-border">
-    <span class="text-[10px] font-mono text-n-dim">Filter era:</span>
+    <span class="text-[10px] font-mono text-n-dim">Era:</span>
     <select id="timelineEra" class="p-2 rounded-lg text-sm">
       <option value="all">All Eras</option>
       <option value="ancient">Ancient (pre-500)</option>
@@ -226,15 +240,19 @@ input:focus,textarea:focus,select:focus { border-color:var(--c-cyan)!important; 
       <option value="modern">Modern (1600-1900)</option>
       <option value="contemporary">Contemporary (1900+)</option>
     </select>
+    <span class="text-[10px] font-mono text-n-dim">Tag:</span>
+    <select id="timelineTag" class="p-2 rounded-lg text-sm">
+      <option value="">All Tags</option>
+    </select>
   </div>
   <div id="timelineEmpty" class="text-center py-12 text-n-dim">
     <i data-lucide="calendar-x" size="32" class="mx-auto mb-3 opacity-50"></i>
     <p class="text-sm font-medium">No notes with years yet. Add a year to your notes to see them here.</p>
   </div>
-  <div class="relative">
-    <div id="timelineTrack" class="overflow-x-auto pb-6 pt-12">
-      <div id="timelineLine" class="relative flex gap-6 items-start" style="min-height:200px;">
-      </div>
+  <div class="fb-wrap">
+    <div id="fishbone" class="fb-ctr">
+      <div class="fb-spine"></div>
+      <div class="fb-arrow"></div>
     </div>
   </div>
 </div>
@@ -348,7 +366,7 @@ async function geminiCall(prompt, isJson=false) {
   for (let i = 0; i < 3; i++) {
     try {
       const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-      if (res.status === 429) { await new Promise(r=>setTimeout(r, Math.pow(2,i)*1000)); continue; }
+      if (res.status === 429) { if (i===2) throw new Error('Rate limited (429) — wait a minute and try again.'); await new Promise(r=>setTimeout(r, Math.pow(2,i)*1000)); continue; }
       if (!res.ok) { const d = await res.json(); throw new Error(d?.error?.message || `HTTP ${res.status}`); }
       const d = await res.json();
       const t = d.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -587,11 +605,11 @@ function initGraph() {
     container: document.getElementById('cy'),
     style: [
       { selector:'node', style:{
-        'label':'data(label)', 'text-wrap':'wrap', 'text-max-width':'80px',
-        'font-size':'10px', 'font-family':'Inter,sans-serif', 'font-weight':'600',
-        'text-valign':'bottom', 'text-halign':'center', 'text-margin-y':8,
-        'background-color':'data(color)', 'color':c.text, 'text-outline-color':c.bg, 'text-outline-width':2,
-        'width':'mapData(size,1,10,20,50)', 'height':'mapData(size,1,10,20,50)',
+        'label':'data(label)', 'text-wrap':'wrap', 'text-max-width':'60px',
+        'font-size':'9px', 'font-family':'Inter,sans-serif', 'font-weight':'600',
+        'text-valign':'center', 'text-halign':'center',
+        'background-color':'data(color)', 'color':'#ffffff', 'text-outline-width':0,
+        'width':'mapData(size,1,10,36,64)', 'height':'mapData(size,1,10,36,64)',
         'border-width':0, 'opacity':0.9,
         'overlay-padding':6
       }},
@@ -690,6 +708,44 @@ async function renderTimeline() {
   `).join('');
 }
 document.getElementById('timelineEra').addEventListener('change', renderTimeline);
+document.getElementById('timelineTag').addEventListener('change', renderTimeline);
+
+// Fishbone override (hoisted over old renderTimeline)
+async function renderTimeline() {
+  var notes = await getAllNotes();
+  var tagEl = document.getElementById('timelineTag');
+  if (tagEl) {
+    var allT = new Set(); notes.forEach(function(n){n.tags.forEach(function(t){allT.add(t);});});
+    var cur = tagEl.value;
+    tagEl.innerHTML = '<option value="">All Tags</option>' + [...allT].sort().map(function(t){return '<option value="'+t+'">'+t+'</option>';}).join('');
+    tagEl.value = cur;
+  }
+  var withYear = notes.filter(function(n){return n.year;}).sort(function(a,b){return a.year - b.year;});
+  var era = document.getElementById('timelineEra').value;
+  var tag = tagEl ? tagEl.value : '';
+  var filtered = withYear.filter(function(n) {
+    if (tag && !n.tags.includes(tag)) return false;
+    if (era==='all') return true;
+    if (era==='ancient') return n.year < 500;
+    if (era==='medieval') return n.year >= 500 && n.year < 1400;
+    if (era==='renaissance') return n.year >= 1400 && n.year < 1600;
+    if (era==='modern') return n.year >= 1600 && n.year < 1900;
+    if (era==='contemporary') return n.year >= 1900;
+    return true;
+  });
+  document.getElementById('timelineEmpty').classList.toggle('hidden', filtered.length > 0);
+  var fb = document.getElementById('fishbone');
+  fb.querySelectorAll('.fb-col').forEach(function(el){el.remove();});
+  if (!filtered.length) return;
+  filtered.forEach(function(n, i) {
+    var pos = i % 2 === 0 ? 'fb-top' : 'fb-bot';
+    var col = document.createElement('div');
+    col.className = 'fb-col ' + pos;
+    var txt = (n.content||'').length > 120 ? (n.content||'').slice(0,120)+'...' : (n.content||'');
+    col.innerHTML = '<div class="fb-dot"></div><div class="fb-yr">' + n.year + '</div><div class="fb-bone"></div><div class="fb-card"><h4 class="font-bold text-sm leading-snug">' + n.title + '</h4><p class="text-[11px] text-n-dim mt-1 leading-relaxed">' + txt + '</p><div class="flex flex-wrap gap-1 mt-2">' + n.tags.map(function(t){return '<span class="tag-pill">'+t+'</span>';}).join('') + '</div></div>';
+    fb.appendChild(col);
+  });
+}
 
 // ===== SUMMARIZE =====
 document.getElementById('generateSummary').addEventListener('click', async () => {
