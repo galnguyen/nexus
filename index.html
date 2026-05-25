@@ -613,21 +613,27 @@ function initGraph() {
     container: document.getElementById('cy'),
     style: [
       { selector:'node', style:{
-        'label':'data(label)', 'text-wrap':'wrap', 'text-max-width':'60px',
-        'font-size':'9px', 'font-family':'Inter,sans-serif', 'font-weight':'600',
-        'text-valign':'center', 'text-halign':'center',
-        'background-color':'data(color)', 'color':'#ffffff', 'text-outline-width':0,
-        'width':'mapData(size,1,10,36,64)', 'height':'mapData(size,1,10,36,64)',
-        'border-width':0, 'opacity':0.9,
-        'overlay-padding':6
+        'label':'', 'text-wrap':'wrap', 'text-max-width':'80px',
+        'font-size':'10px', 'font-family':'Inter,sans-serif', 'font-weight':'700',
+        'text-valign':'bottom', 'text-halign':'center', 'text-margin-y':8,
+        'background-color':'data(color)', 'color':'data(color)',
+        'text-outline-width':2, 'text-outline-color':c.bg, 'text-outline-opacity':0.9,
+        'width':'mapData(size,1,10,56,90)', 'height':'mapData(size,1,10,56,90)',
+        'border-width':2, 'border-color':'data(color)', 'border-opacity':0.25,
+        'opacity':0.8, 'overlay-padding':8
       }},
-      { selector:'node.dimmed', style:{ 'opacity':0.1 }},
-      { selector:'node.highlighted', style:{ 'opacity':1, 'width':'mapData(size,1,10,28,58)', 'height':'mapData(size,1,10,28,58)' }},
+      { selector:'node.hovered', style:{
+        'label':'data(label)', 'opacity':1,
+        'width':'mapData(size,1,10,64,100)', 'height':'mapData(size,1,10,64,100)',
+        'border-opacity':0.6
+      }},
+      { selector:'node.dimmed', style:{ 'opacity':0.08 }},
+      { selector:'node.highlighted', style:{ 'opacity':1, 'label':'data(label)', 'border-opacity':0.6 }},
       { selector:'edge', style:{
-        'width':1.5, 'line-color':'data(color)', 'line-opacity':0.6,
+        'width':1.5, 'line-color':'data(color)', 'line-opacity':0.35,
         'target-arrow-shape':'none', 'curve-style':'bezier'
       }},
-      { selector:'edge.dimmed', style:{ 'line-opacity':0.05 }}
+      { selector:'edge.dimmed', style:{ 'line-opacity':0.03 }}
     ],
     layout: { name:'cose', animate:true, animationDuration:800, nodeRepulsion:()=>12000, idealEdgeLength:()=>150, gravity:0.25 },
     minZoom:0.3, maxZoom:3
@@ -643,13 +649,15 @@ function initGraph() {
     tip.classList.remove('hidden');
   });
   cy.on('tap', (e) => { if (e.target === cy) document.getElementById('graphTooltip').classList.add('hidden'); });
+  cy.on('mouseover', 'node', (e) => { e.target.addClass('hovered'); document.getElementById('cy').style.cursor = 'pointer'; });
+  cy.on('mouseout', 'node', (e) => { e.target.removeClass('hovered'); document.getElementById('cy').style.cursor = 'default'; });
 }
 
 async function renderGraph() {
   if (!cy) initGraph();
   const notes = await getAllNotes();
   cy.elements().remove();
-  const colors = ['#06b6d4','#8b5cf6','#f59e0b','#10b981','#ec4899','#3b82f6','#ef4444','#64748b'];
+  const colors = ['#4da8b5','#9b7cc8','#d4a04a','#5cad6f','#c97088','#5f8ec4','#cf7c5e','#7e8ea0'];
   const tagColorMap = {}; let ci = 0;
   notes.forEach(n => n.tags.forEach(t => { if (!tagColorMap[t]) tagColorMap[t] = colors[ci++ % colors.length]; }));
   notes.forEach(n => {
