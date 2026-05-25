@@ -120,10 +120,10 @@ input:focus,textarea:focus,select:focus { border-color:var(--c-cyan)!important; 
 
 <!-- TABS -->
 <nav class="flex border-b border-n-border overflow-x-auto max-w-5xl mx-auto">
-  <button class="main-tab flex-none font-mono text-xs tracking-wider uppercase px-5 py-3 border-b-2 border-n-cyan text-n-cyan transition-all" data-tab="notes">\ud83d\udcdd Notes</button>
-  <button class="main-tab flex-none font-mono text-xs tracking-wider uppercase px-5 py-3 border-b-2 border-transparent text-n-dim hover:text-n-text transition-all" data-tab="graph">\ud83d\udd78\ufe0f Graph</button>
-  <button class="main-tab flex-none font-mono text-xs tracking-wider uppercase px-5 py-3 border-b-2 border-transparent text-n-dim hover:text-n-text transition-all" data-tab="timeline">\ud83d\udcc5 Timeline</button>
-  <button class="main-tab flex-none font-mono text-xs tracking-wider uppercase px-5 py-3 border-b-2 border-transparent text-n-dim hover:text-n-text transition-all" data-tab="summarize">\ud83e\udd16 Summarize</button>
+  <button class="main-tab flex-none font-mono text-xs tracking-wider uppercase px-5 py-3 border-b-2 border-n-cyan text-n-cyan transition-all" data-tab="notes">📝 Notes</button>
+  <button class="main-tab flex-none font-mono text-xs tracking-wider uppercase px-5 py-3 border-b-2 border-transparent text-n-dim hover:text-n-text transition-all" data-tab="graph">🕸️ Graph</button>
+  <button class="main-tab flex-none font-mono text-xs tracking-wider uppercase px-5 py-3 border-b-2 border-transparent text-n-dim hover:text-n-text transition-all" data-tab="timeline">📅 Timeline</button>
+  <button class="main-tab flex-none font-mono text-xs tracking-wider uppercase px-5 py-3 border-b-2 border-transparent text-n-dim hover:text-n-text transition-all" data-tab="summarize">🤖 Summarize</button>
 </nav>
 
 <!-- ========== TAB: NOTES ========== -->
@@ -166,8 +166,8 @@ input:focus,textarea:focus,select:focus { border-color:var(--c-cyan)!important; 
       <div class="flex gap-2 flex-wrap">
         <select id="linkTarget" class="flex-1 p-2.5 rounded-lg text-sm min-w-[200px]"><option value="">Select a note...</option></select>
         <select id="linkType" class="p-2.5 rounded-lg text-sm">
-          <option value="supports">\u2705 Supports</option>
-          <option value="contradicts">\u274c Contradicts</option>
+          <option value="supports">✅ Supports</option>
+          <option value="contradicts">❌ Contradicts</option>
         </select>
         <button id="addLinkBtn" class="bg-n-card text-n-text px-4 py-2 rounded-lg text-xs font-bold border border-n-border hover:border-n-cyan transition-all">+ Link</button>
       </div>
@@ -188,7 +188,7 @@ input:focus,textarea:focus,select:focus { border-color:var(--c-cyan)!important; 
     <select id="sortNotes" class="p-2.5 rounded-lg text-sm">
       <option value="newest">Newest first</option>
       <option value="oldest">Oldest first</option>
-      <option value="alpha">A \u2192 Z</option>
+      <option value="alpha">A → Z</option>
       <option value="year">By year</option>
     </select>
   </div>
@@ -257,15 +257,15 @@ input:focus,textarea:focus,select:focus { border-color:var(--c-cyan)!important; 
   <div id="summaryResult" class="hidden space-y-4">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="bg-n-card rounded-xl border border-n-border p-5 space-y-2">
-        <h3 class="font-mono text-[10px] font-bold text-n-blue uppercase tracking-widest">\ud83c\uddec\ud83c\udde7 English</h3>
+        <h3 class="font-mono text-[10px] font-bold text-n-blue uppercase tracking-widest">🇬🇧 English</h3>
         <div id="summaryEN" class="text-sm leading-relaxed"></div>
       </div>
       <div class="bg-n-card rounded-xl border border-n-border p-5 space-y-2">
-        <h3 class="font-mono text-[10px] font-bold text-n-green uppercase tracking-widest">\ud83c\udde9\ud83c\uddea Deutsch</h3>
+        <h3 class="font-mono text-[10px] font-bold text-n-green uppercase tracking-widest">🇩🇪 Deutsch</h3>
         <div id="summaryDE" class="text-sm leading-relaxed"></div>
       </div>
       <div class="bg-n-card rounded-xl border border-n-border p-5 space-y-2">
-        <h3 class="font-mono text-[10px] font-bold text-n-red uppercase tracking-widest">\ud83c\udde8\ud83c\uddf3 \u4e2d\u6587</h3>
+        <h3 class="font-mono text-[10px] font-bold text-n-red uppercase tracking-widest">🇨🇳 中文</h3>
         <div id="summaryZH" class="text-sm leading-relaxed"></div>
       </div>
     </div>
@@ -342,7 +342,7 @@ async function putCache(key, val) { await db.put('cache', { key, ...val }); }
 async function geminiCall(prompt, isJson=false) {
   const key = getKey();
   if (!key) { notify('Set Gemini API Key in config.','error'); throw new Error('No key'); }
-  const model = 'gemini-2.5-flash-preview-05-20';
+  const model = 'gemini-2.0-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
   const payload = { contents:[{parts:[{text:prompt}]}], generationConfig: isJson ? {responseMimeType:'application/json'} : {} };
   for (let i = 0; i < 3; i++) {
@@ -411,12 +411,10 @@ let formLinks = [];
 function refreshTagSuggestions() {
   const dl = document.getElementById('tagSuggestions');
   dl.innerHTML = [...allTags].sort().map(t => `<option value="${t}">`).join('');
-  // Filter dropdowns
   const filterTag = document.getElementById('filterTag');
   const cur = filterTag.value;
   filterTag.innerHTML = '<option value="">All tags</option>' + [...allTags].sort().map(t => `<option value="${t}">${t}</option>`).join('');
   filterTag.value = cur;
-  // Summary tag
   const sumTag = document.getElementById('summaryTag');
   const curS = sumTag.value;
   sumTag.innerHTML = '<option value="">Select a tag...</option>' + [...allTags].sort().map(t => `<option value="${t}">${t}</option>`).join('');
@@ -551,7 +549,6 @@ async function renderNotes() {
   }).join('');
   lucide.createIcons();
 
-  // Bind edit/delete
   document.querySelectorAll('.edit-note').forEach(b => b.addEventListener('click', async () => {
     const n = await getNote(b.dataset.id); if (!n) return;
     document.getElementById('editingId').value = n.id;
@@ -573,7 +570,6 @@ async function renderNotes() {
   }));
 }
 
-// Search & filter listeners
 ['searchNotes','filterTag','sortNotes'].forEach(id => document.getElementById(id).addEventListener('input', renderNotes));
 document.getElementById('filterTag').addEventListener('change', renderNotes);
 document.getElementById('sortNotes').addEventListener('change', renderNotes);
@@ -585,25 +581,25 @@ function initGraph() {
     container: document.getElementById('cy'),
     style: [
       { selector:'node', style:{
-        'label':'data(label)', 'text-wrap':'wrap', 'text-max-width':'100px',
-        'font-size':'11px', 'font-family':'Inter,sans-serif', 'font-weight':'600',
-        'text-valign':'center', 'text-halign':'center',
-        'background-color':'data(color)', 'color':'#fff', 'text-outline-color':'data(color)', 'text-outline-width':2,
-        'width':'mapData(size,1,10,40,80)', 'height':'mapData(size,1,10,40,80)',
-        'border-width':2, 'border-color':'rgba(255,255,255,0.3)'
+        'label':'data(label)', 'text-wrap':'wrap', 'text-max-width':'80px',
+        'font-size':'10px', 'font-family':'Inter,sans-serif', 'font-weight':'600',
+        'text-valign':'bottom', 'text-halign':'center', 'text-margin-y':8,
+        'background-color':'data(color)', 'color':'var(--c-text)', 'text-outline-color':'var(--c-bg)', 'text-outline-width':2,
+        'width':'mapData(size,1,10,20,50)', 'height':'mapData(size,1,10,20,50)',
+        'border-width':0, 'opacity':0.9,
+        'overlay-padding':6
       }},
-      { selector:'node.dimmed', style:{ 'opacity':0.15 }},
-      { selector:'node.highlighted', style:{ 'border-width':4, 'border-color':'#fff', 'opacity':1 }},
+      { selector:'node.dimmed', style:{ 'opacity':0.1 }},
+      { selector:'node.highlighted', style:{ 'opacity':1, 'width':'mapData(size,1,10,28,58)', 'height':'mapData(size,1,10,28,58)' }},
       { selector:'edge', style:{
-        'width':2, 'line-color':'data(color)', 'target-arrow-color':'data(color)',
-        'target-arrow-shape':'triangle', 'curve-style':'bezier', 'opacity':0.7
+        'width':1.5, 'line-color':'data(color)', 'line-opacity':0.6,
+        'target-arrow-shape':'none', 'curve-style':'bezier'
       }},
-      { selector:'edge.dimmed', style:{ 'opacity':0.05 }}
+      { selector:'edge.dimmed', style:{ 'line-opacity':0.05 }}
     ],
-    layout: { name:'cose', animate:true, animationDuration:800, nodeRepulsion:()=>8000, idealEdgeLength:()=>120 },
+    layout: { name:'cose', animate:true, animationDuration:800, nodeRepulsion:()=>12000, idealEdgeLength:()=>150, gravity:0.25 },
     minZoom:0.3, maxZoom:3
   });
-  // Tooltip
   cy.on('tap','node', async (e) => {
     const id = e.target.data('noteId');
     const n = await getNote(id); if (!n) return;
@@ -635,7 +631,7 @@ async function renderGraph() {
       }
     });
   });
-  cy.layout({ name:'cose', animate:true, animationDuration:800, nodeRepulsion:()=>8000, idealEdgeLength:()=>120 }).run();
+  cy.layout({ name:'cose', animate:true, animationDuration:800, nodeRepulsion:()=>12000, idealEdgeLength:()=>150, gravity:0.25 }).run();
 }
 
 document.getElementById('graphSearch').addEventListener('input', () => {
@@ -643,8 +639,6 @@ document.getElementById('graphSearch').addEventListener('input', () => {
   if (!q) { cy.elements().removeClass('dimmed highlighted'); return; }
   cy.nodes().forEach(node => {
     const n = node.data();
-    const matchTag = q && cy.$id(n.id).data('label');
-    // Check if note has matching tag
     getAllNotes().then(notes => {
       const note = notes.find(x=>x.id===n.noteId);
       if (note && note.tags.some(t=>t.toLowerCase().includes(q))) {
@@ -696,7 +690,6 @@ document.getElementById('generateSummary').addEventListener('click', async () =>
   const tag = document.getElementById('summaryTag').value;
   if (!tag) return notify('Select a tag first.','error');
   const st = document.getElementById('summaryStatus');
-  // Check cache
   const cached = await getCache('summary_' + tag);
   if (cached && cached.data) {
     displaySummary(cached.data);
@@ -718,7 +711,7 @@ NOTES:\n${notesText}`;
     const data = JSON.parse(raw);
     displaySummary(data);
     await putCache('summary_'+tag, { data, cachedAt: new Date().toISOString() });
-    document.getElementById('summaryCacheInfo').textContent = 'Just generated — cached for next time';
+    document.getElementById('summaryCacheInfo').textContent = 'Just generated \u2014 cached for next time';
     st.textContent = '';
   } catch(e) { st.textContent = ''; notify('Summary failed: '+e.message,'error'); }
 });
@@ -783,7 +776,6 @@ async function refreshAll() {
   const notes = await getAllNotes();
   allTags = new Set();
   notes.forEach(n => n.tags.forEach(t => allTags.add(t)));
-  // Resolve link titles
   for (const n of notes) {
     for (const l of n.links) {
       const target = notes.find(x => x.id === l.targetId);
@@ -798,7 +790,6 @@ async function refreshAll() {
 // ===== INIT =====
 async function init() {
   await initDB();
-  // Try pull from gist on load
   if (getGhToken() && getGistId()) {
     const remote = await pullFromGist();
     if (remote && remote.notes) {
