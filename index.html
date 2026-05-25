@@ -412,7 +412,7 @@ async function pullFromGist() {
   if (!token || !gistId) return null;
   try {
     const res = await fetch(`https://api.github.com/gists/${gistId}`, { headers:{'Authorization':`token ${token}`} });
-    if (!res.ok) { if (res.status===404) updateSyncStatus('error'); return null; }
+    if (!res.ok) { if (res.status===404) { setGistId(''); updateSyncStatus('error'); notify('Gist not found — ID cleared. Create a new one via Sync Now.','error'); } return null; }
     const d = await res.json();
     const content = d.files?.['nexus-data.json']?.content;
     if (!content) return null;
