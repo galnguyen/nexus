@@ -365,7 +365,7 @@ async function putCache(key, val) { await db.put('cache', { key, ...val }); }
 async function geminiCall(prompt, isJson=false) {
   const key = getKey();
   if (!key) { notify('Set Gemini API Key in config.','error'); throw new Error('No key'); }
-  const model = 'gemini-2.0-flash';
+  const model = 'gemini-2.5-flash-preview-05-20';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
   const payload = { contents:[{parts:[{text:prompt}]}], generationConfig: isJson ? {responseMimeType:'application/json'} : {} };
   for (let i = 0; i < 3; i++) {
