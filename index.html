@@ -294,7 +294,7 @@ function applyTheme() {
   lucide.createIcons();
 }
 applyTheme();
-themeToggleBtn.addEventListener('click', () => { isGameMode = !isGameMode; localStorage.setItem('nexus_theme', isGameMode ? 'game' : 'learn'); applyTheme(); });
+themeToggleBtn.addEventListener('click', () => { isGameMode = !isGameMode; localStorage.setItem('nexus_theme', isGameMode ? 'game' : 'learn'); applyTheme(); if (cy) { cy.destroy(); cy = null; } });
 
 // ===== NOTIFY =====
 function notify(msg, type='info') {
@@ -576,7 +576,13 @@ document.getElementById('sortNotes').addEventListener('change', renderNotes);
 
 // ===== GRAPH =====
 let cy;
+function getCyColors() {
+  const s = getComputedStyle(document.body);
+  return { text: s.getPropertyValue('--c-text').trim(), bg: s.getPropertyValue('--c-bg').trim() };
+}
+
 function initGraph() {
+  const c = getCyColors();
   cy = cytoscape({
     container: document.getElementById('cy'),
     style: [
@@ -584,7 +590,7 @@ function initGraph() {
         'label':'data(label)', 'text-wrap':'wrap', 'text-max-width':'80px',
         'font-size':'10px', 'font-family':'Inter,sans-serif', 'font-weight':'600',
         'text-valign':'bottom', 'text-halign':'center', 'text-margin-y':8,
-        'background-color':'data(color)', 'color':'var(--c-text)', 'text-outline-color':'var(--c-bg)', 'text-outline-width':2,
+        'background-color':'data(color)', 'color':c.text, 'text-outline-color':c.bg, 'text-outline-width':2,
         'width':'mapData(size,1,10,20,50)', 'height':'mapData(size,1,10,20,50)',
         'border-width':0, 'opacity':0.9,
         'overlay-padding':6
