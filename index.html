@@ -54,17 +54,21 @@ input:focus,textarea:focus,select:focus { border-color:var(--c-cyan)!important; 
 .fb-spine { position:absolute; top:50%; left:0; right:0; height:3px; background:var(--c-cyan); transform:translateY(-50%); }
 .fb-arrow { position:absolute; top:50%; right:-2px; transform:translateY(-50%); border:7px solid transparent; border-left:12px solid var(--c-cyan); }
 .fb-col { position:relative; width:210px; flex-shrink:0; height:520px; }
-.fb-dot { position:absolute; top:50%; left:50%; width:14px; height:14px; border-radius:50%; background:var(--c-cyan); border:3px solid var(--c-bg); transform:translate(-50%,-50%); z-index:2; }
+.fb-dot { position:absolute; top:50%; left:50%; width:28px; height:28px; border-radius:50%; border:3px solid var(--c-bg); transform:translate(-50%,-50%); z-index:2; cursor:pointer; transition:all .2s; }
+.fb-dot:hover { transform:translate(-50%,-50%) scale(1.2); box-shadow:0 0 12px rgba(0,0,0,.15); }
 .fb-bone { position:absolute; left:50%; width:2px; }
 .fb-col.fb-top .fb-bone { top:calc(50% - 90px); height:90px; transform-origin:bottom center; transform:translateX(-50%) rotate(-15deg); background:linear-gradient(to top,var(--c-cyan),var(--c-border)); }
 .fb-col.fb-bot .fb-bone { top:50%; height:90px; transform-origin:top center; transform:translateX(-50%) rotate(15deg); background:linear-gradient(to bottom,var(--c-cyan),var(--c-border)); }
-.fb-card { position:absolute; width:190px; background:var(--c-card); border:1px solid var(--c-border); border-radius:12px; padding:14px; transition:all .2s; }
-.fb-card:hover { border-color:var(--c-cyan); box-shadow:0 4px 12px rgba(0,0,0,.1); transform:translateY(-2px); }
+.fb-card { position:absolute; width:190px; background:var(--c-card); border:1px solid var(--c-border); border-radius:12px; padding:14px; transition:all .2s; display:none; }
+.fb-card.visible { display:block; }
+.fb-card.visible:hover { border-color:var(--c-cyan); box-shadow:0 4px 12px rgba(0,0,0,.1); transform:translateY(-2px); }
 .fb-col.fb-top .fb-card { bottom:calc(50% + 90px); left:0; }
 .fb-col.fb-bot .fb-card { top:calc(50% + 90px); right:0; }
 .fb-yr { position:absolute; font-size:9px; font-family:'Space Mono',monospace; font-weight:700; color:var(--c-amber); white-space:nowrap; z-index:3; }
 .fb-col.fb-top .fb-yr { top:calc(50% + 10px); left:calc(50% + 12px); }
 .fb-col.fb-bot .fb-yr { bottom:calc(50% + 10px); left:calc(50% + 12px); }
+.fb-tip { position:fixed; z-index:20; background:var(--c-card); border:1px solid var(--c-border); border-radius:8px; padding:4px 12px; font-size:11px; font-weight:700; font-family:'Inter',sans-serif; white-space:nowrap; pointer-events:none; box-shadow:0 2px 8px rgba(0,0,0,.12); opacity:0; transition:opacity .15s; }
+.fb-tip.show { opacity:1; }
 .sync-dot { width:8px; height:8px; border-radius:50%; }
 .sync-dot.synced { background:var(--c-green); } .sync-dot.unsynced { background:var(--c-amber); } .sync-dot.error { background:var(--c-red); }
 </style>
@@ -249,6 +253,7 @@ input:focus,textarea:focus,select:focus { border-color:var(--c-cyan)!important; 
     <i data-lucide="calendar-x" size="32" class="mx-auto mb-3 opacity-50"></i>
     <p class="text-sm font-medium">No notes with years yet. Add a year to your notes to see them here.</p>
   </div>
+  <div id="fbTip" class="fb-tip"></div>
   <div class="fb-wrap">
     <div id="fishbone" class="fb-ctr">
       <div class="fb-spine"></div>
@@ -657,7 +662,7 @@ async function renderGraph() {
   if (!cy) initGraph();
   const notes = await getAllNotes();
   cy.elements().remove();
-  const colors = ['#4da8b5','#9b7cc8','#d4a04a','#5cad6f','#c97088','#5f8ec4','#cf7c5e','#7e8ea0'];
+  const colors = ['#5c8a99','#8e7aaa','#6a9a75','#aa9460','#9a7080','#5a9090','#9a8060','#6a80a0'];
   const tagColorMap = {}; let ci = 0;
   notes.forEach(n => n.tags.forEach(t => { if (!tagColorMap[t]) tagColorMap[t] = colors[ci++ % colors.length]; }));
   notes.forEach(n => {
@@ -753,12 +758,36 @@ async function renderTimeline() {
   var fb = document.getElementById('fishbone');
   fb.querySelectorAll('.fb-col').forEach(function(el){el.remove();});
   if (!filtered.length) return;
+  var dotPalette = ['#c97050','#5a9a72','#7e62a8','#c49332','#4e82a4','#c4606e','#3a7d6e','#8a7050'];
+  var tagDotMap = {}; var dci = 0;
+  filtered.forEach(function(n){n.tags.forEach(function(t){if(!tagDotMap[t])tagDotMap[t]=dotPalette[dci++%dotPalette.length];});});
   filtered.forEach(function(n, i) {
     var pos = i % 2 === 0 ? 'fb-top' : 'fb-bot';
     var col = document.createElement('div');
     col.className = 'fb-col ' + pos;
+    var dotColor = n.tags.length ? tagDotMap[n.tags[0]] : '#64748b';
     var txt = (n.content||'').length > 120 ? (n.content||'').slice(0,120)+'...' : (n.content||'');
-    col.innerHTML = '<div class="fb-dot"></div><div class="fb-yr">' + n.year + '</div><div class="fb-bone"></div><div class="fb-card"><h4 class="font-bold text-sm leading-snug">' + n.title + '</h4><p class="text-[11px] text-n-dim mt-1 leading-relaxed">' + txt + '</p><div class="flex flex-wrap gap-1 mt-2">' + n.tags.map(function(t){return '<span class="tag-pill">'+t+'</span>';}).join('') + '</div></div>';
+    col.innerHTML = '<div class="fb-dot" style="background:'+dotColor+'"></div><div class="fb-yr">' + n.year + '</div><div class="fb-bone"></div><div class="fb-card"><h4 class="font-bold text-sm leading-snug">' + n.title + '</h4><p class="text-[11px] text-n-dim mt-1 leading-relaxed">' + txt + '</p><div class="flex flex-wrap gap-1 mt-2">' + n.tags.map(function(t){return '<span class="tag-pill">'+t+'</span>';}).join('') + '</div></div>';
+    var dot = col.querySelector('.fb-dot');
+    var card = col.querySelector('.fb-card');
+    dot.addEventListener('mouseenter', function() {
+      var tip = document.getElementById('fbTip');
+      tip.textContent = n.title;
+      requestAnimationFrame(function() {
+        var r = dot.getBoundingClientRect();
+        tip.style.left = (r.left + r.width/2 - tip.offsetWidth/2) + 'px';
+        tip.style.top = (r.top - 32) + 'px';
+        tip.classList.add('show');
+      });
+    });
+    dot.addEventListener('mouseleave', function() {
+      document.getElementById('fbTip').classList.remove('show');
+    });
+    dot.addEventListener('click', function() {
+      var wasVisible = card.classList.contains('visible');
+      fb.querySelectorAll('.fb-card.visible').forEach(function(c){c.classList.remove('visible');});
+      if (!wasVisible) card.classList.add('visible');
+    });
     fb.appendChild(col);
   });
 }
