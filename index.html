@@ -412,6 +412,7 @@ async function pullFromGist() {
   if (!token || !gistId) return null;
   try {
     const res = await fetch(`https://api.github.com/gists/${gistId}`, { headers:{'Authorization':`token ${token}`} });
+    if (!res.ok) { if (res.status===404) updateSyncStatus('error'); return null; }
     const d = await res.json();
     const content = d.files?.['nexus-data.json']?.content;
     if (!content) return null;
@@ -619,7 +620,7 @@ function initGraph() {
     style: [
       { selector:'node', style:{
         'label':'', 'text-wrap':'wrap', 'text-max-width':'80px',
-        'font-size':'10px', 'font-family':'Inter,sans-serif', 'font-weight':'700',
+        'font-size':'10px', 'font-family':'Inter,sans-serif', 'font-weight':'bold',
         'text-valign':'bottom', 'text-halign':'center', 'text-margin-y':8,
         'background-color':'data(color)', 'color':'data(color)',
         'text-outline-width':0,
@@ -680,6 +681,7 @@ async function renderGraph() {
 }
 
 document.getElementById('graphSearch').addEventListener('input', () => {
+  if (!cy) return;
   const q = document.getElementById('graphSearch').value.trim().toLowerCase();
   if (!q) { cy.elements().removeClass('dimmed highlighted'); return; }
   cy.nodes().forEach(node => {
