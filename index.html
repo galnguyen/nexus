@@ -620,21 +620,20 @@ function initGraph() {
     style: [
       { selector:'node', style:{
         'label':'', 'text-wrap':'wrap', 'text-max-width':'80px',
-        'font-size':'10px', 'font-family':'Inter,sans-serif', 'font-weight':'bold',
-        'text-valign':'bottom', 'text-halign':'center', 'text-margin-y':8,
-        'background-color':'data(color)', 'color':'data(color)',
+        'font-size':'9px', 'font-family':'Inter,sans-serif', 'font-weight':'bold',
+        'text-valign':'bottom', 'text-halign':'center', 'text-margin-y':6,
+        'background-color':'var(--c-cyan)', 'color':'var(--c-cyan)',
         'text-outline-width':0,
-        'width':'mapData(size,1,10,24,48)', 'height':'mapData(size,1,10,24,48)',
-        'border-width':2, 'border-color':'data(color)', 'border-opacity':0.25,
-        'opacity':0.8, 'overlay-padding':8
+        'width':'mapData(size,1,10,10,22)', 'height':'mapData(size,1,10,10,22)',
+        'border-width':0,
+        'opacity':0.85, 'overlay-padding':6
       }},
       { selector:'node.hovered', style:{
         'label':'data(label)', 'opacity':1,
-        'width':'mapData(size,1,10,30,56)', 'height':'mapData(size,1,10,30,56)',
-        'border-opacity':0.6
+        'width':'mapData(size,1,10,14,28)', 'height':'mapData(size,1,10,14,28)'
       }},
       { selector:'node.dimmed', style:{ 'opacity':0.08 }},
-      { selector:'node.highlighted', style:{ 'opacity':1, 'label':'data(label)', 'border-opacity':0.6 }},
+      { selector:'node.highlighted', style:{ 'opacity':1, 'label':'data(label)' }},
       { selector:'edge', style:{
         'width':1.5, 'line-color':'data(color)', 'line-opacity':0.35,
         'target-arrow-shape':'none', 'curve-style':'bezier'
