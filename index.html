@@ -416,8 +416,10 @@ async function syncToGist() {
       await txM.done;
     }
   }
-  // Only push non-deleted notes to Gist (tombstones stay local only)
-  var pushNotes = merged.filter(function(n){ return !n.deleted; });
+  // Push ALL notes including tombstones so deletions propagate to other devices
+  // Clean up tombstones older than 30 days to avoid bloat
+  var thirtyDaysAgo = new Date(Date.now() - 30*24*60*60*1000).toISOString();
+  var pushNotes = merged.filter(function(n){ return !(n.deleted && n.updatedAt < thirtyDaysAgo); });
   var data = JSON.stringify({ notes: pushNotes, exportedAt: new Date().toISOString() }, null, 2);
   try {
     if (gistId) {
