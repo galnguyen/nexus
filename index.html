@@ -610,7 +610,7 @@ document.getElementById('sortNotes').addEventListener('change', renderNotes);
 let cy;
 function getCyColors() {
   const s = getComputedStyle(document.body);
-  return { text: s.getPropertyValue('--c-text').trim(), bg: s.getPropertyValue('--c-bg').trim() };
+  return { text: s.getPropertyValue('--c-text').trim(), bg: s.getPropertyValue('--c-bg').trim(), cyan: s.getPropertyValue('--c-cyan').trim() };
 }
 
 function initGraph() {
@@ -622,7 +622,7 @@ function initGraph() {
         'label':'', 'text-wrap':'wrap', 'text-max-width':'80px',
         'font-size':'9px', 'font-family':'Inter,sans-serif', 'font-weight':'bold',
         'text-valign':'bottom', 'text-halign':'center', 'text-margin-y':6,
-        'background-color':'var(--c-cyan)', 'color':'var(--c-cyan)',
+        'background-color':c.cyan, 'color':c.cyan,
         'text-outline-width':0,
         'width':'mapData(size,1,10,10,22)', 'height':'mapData(size,1,10,10,22)',
         'border-width':0,
