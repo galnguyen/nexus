@@ -381,13 +381,38 @@ async function geminiCall(prompt, isJson=false) {
   }
 }
 
-// ===== GITHUB GIST SYNC =====
+// ===== GITHUB GIST SYNC (BIDIRECTIONAL MERGE) =====
+function mergeNotes(localNotes, remoteNotes) {
+  var map = {};
+  localNotes.forEach(function(n) { map[n.id] = n; });
+  remoteNotes.forEach(function(n) {
+    if (!map[n.id]) { map[n.id] = n; }
+    else {
+      var localT = new Date(map[n.id].updatedAt || map[n.id].createdAt).getTime();
+      var remoteT = new Date(n.updatedAt || n.createdAt).getTime();
+      if (remoteT > localT) map[n.id] = n;
+    }
+  });
+  return Object.values(map);
+}
+
 async function syncToGist() {
   const token = getGhToken();
   if (!token) { notify('Set GitHub Token in config to sync.','error'); return; }
-  const notes = await getAllNotes();
-  const data = JSON.stringify({ notes, exportedAt: new Date().toISOString() }, null, 2);
   let gistId = getGistId();
+  var localNotes = await getAllNotes();
+  var merged = localNotes;
+  // Pull remote first and merge if gist exists
+  if (gistId) {
+    var remote = await pullFromGist();
+    if (remote && remote.notes && remote.notes.length > 0) {
+      merged = mergeNotes(localNotes, remote.notes);
+      var txM = db.transaction('notes','readwrite');
+      for (var i = 0; i < merged.length; i++) await txM.store.put(merged[i]);
+      await txM.done;
+    }
+  }
+  var data = JSON.stringify({ notes: merged, exportedAt: new Date().toISOString() }, null, 2);
   try {
     if (gistId) {
       await fetch(`https://api.github.com/gists/${gistId}`, {
@@ -402,6 +427,7 @@ async function syncToGist() {
       const d = await res.json();
       if (d.id) { setGistId(d.id); gistId = d.id; }
     }
+    await refreshAll();
     updateSyncStatus('synced');
     notify('Synced to GitHub!','success');
   } catch(e) { updateSyncStatus('error'); notify('Sync failed: '+e.message,'error'); }
@@ -905,14 +931,13 @@ async function init() {
   await initDB();
   if (getGhToken() && getGistId()) {
     const remote = await pullFromGist();
-    if (remote && remote.notes) {
+    if (remote && remote.notes && remote.notes.length > 0) {
       const local = await getAllNotes();
-      if (remote.notes.length > local.length) {
-        const tx = db.transaction('notes','readwrite');
-        for (const n of remote.notes) await tx.store.put(n);
-        await tx.done;
-        updateSyncStatus('synced');
-      } else { updateSyncStatus('synced'); }
+      const merged = mergeNotes(local, remote.notes);
+      const tx = db.transaction('notes','readwrite');
+      for (const n of merged) await tx.store.put(n);
+      await tx.done;
+      updateSyncStatus('synced');
     }
   }
   await refreshAll();
