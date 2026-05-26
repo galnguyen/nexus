@@ -307,6 +307,24 @@ input:focus,textarea:focus,select:focus { border-color:var(--c-cyan)!important; 
 <script>
 lucide.createIcons();
 
+// ===== FETCH WRAPPER: cache-bust GitHub GET + check PATCH responses =====
+(function() {
+  var _origFetch = window.fetch;
+  window.fetch = function(url, opts) {
+    opts = opts || {};
+    var isGH = typeof url === 'string' && url.indexOf('api.github.com') !== -1;
+    if (isGH && (!opts.method || opts.method === 'GET')) {
+      opts.cache = 'no-store';
+    }
+    return _origFetch.call(window, url, opts).then(function(res) {
+      if (isGH && opts.method === 'PATCH' && !res.ok) {
+        throw new Error('Gist push failed: HTTP ' + res.status);
+      }
+      return res;
+    });
+  };
+})();
+
 // ===== THEME =====
 const themeToggleBtn = document.getElementById('themeToggle');
 let isGameMode = localStorage.getItem('nexus_theme') === 'game';
