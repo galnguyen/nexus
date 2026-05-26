@@ -354,10 +354,14 @@ async function initDB() {
   });
 }
 
-async function getAllNotes() { return db.getAll('notes'); }
-async function getNote(id) { return db.get('notes', id); }
+async function getAllNotesRaw() { return db.getAll('notes'); }
+async function getAllNotes() { var all = await db.getAll('notes'); return all.filter(function(n){ return !n.deleted; }); }
+async function getNote(id) { var n = await db.get('notes', id); return (n && n.deleted) ? null : n; }
 async function putNote(note) { await db.put('notes', note); }
-async function deleteNote(id) { await db.delete('notes', id); }
+async function deleteNote(id) {
+  var n = await db.get('notes', id);
+  if (n) { n.deleted = true; n.updatedAt = new Date().toISOString(); await db.put('notes', n); }
+}
 async function getCache(key) { return db.get('cache', key); }
 async function putCache(key, val) { await db.put('cache', { key, ...val }); }
 
@@ -400,7 +404,7 @@ async function syncToGist() {
   const token = getGhToken();
   if (!token) { notify('Set GitHub Token in config to sync.','error'); return; }
   let gistId = getGistId();
-  var localNotes = await getAllNotes();
+  var localNotes = await getAllNotesRaw();
   var merged = localNotes;
   // Pull remote first and merge if gist exists
   if (gistId) {
@@ -412,7 +416,9 @@ async function syncToGist() {
       await txM.done;
     }
   }
-  var data = JSON.stringify({ notes: merged, exportedAt: new Date().toISOString() }, null, 2);
+  // Only push non-deleted notes to Gist (tombstones stay local only)
+  var pushNotes = merged.filter(function(n){ return !n.deleted; });
+  var data = JSON.stringify({ notes: pushNotes, exportedAt: new Date().toISOString() }, null, 2);
   try {
     if (gistId) {
       await fetch(`https://api.github.com/gists/${gistId}`, {
@@ -932,7 +938,7 @@ async function init() {
   if (getGhToken() && getGistId()) {
     const remote = await pullFromGist();
     if (remote && remote.notes && remote.notes.length > 0) {
-      const local = await getAllNotes();
+      const local = await getAllNotesRaw();
       const merged = mergeNotes(local, remote.notes);
       const tx = db.transaction('notes','readwrite');
       for (const n of merged) await tx.store.put(n);
